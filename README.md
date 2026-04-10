@@ -1,16 +1,58 @@
-# React + Vite
+# ClassBoard | Virtual Whiteboard 🎨
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, high-performance virtual whiteboard built with React and Vite. Designed for distance learning, brainstorming sessions, and professional presentations.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **13 Specialized Tools**: Pencil, Eraser, Shapes (Rectangle/Circle), Lines, Arrows, Text, Sticky Notes, Laser Pointer, and more.
+- **Premium Drawing Engine**: Sub-pixel precision drawing with support for high DPI screens.
+- **Dynamic Laser Pointer**: Real-time fading laser for highlighting content during presentations.
+- **Advanced History (80 Steps)**: Reliable Undo/Redo system with deep state snapshots.
+- **Screen Sharing & Recording**: Built-in PiP video window for screen sharing and session recording (WebM format).
+- **Pro UI Aesthetics**: Premium glassmorphism design with Framer Motion animations and Outfit typography.
+- **Rich Customization**: 24 preset colors, adjustable stroke weight, and opacity controls.
+- **Grid View**: Toggle between plain and grid backgrounds for precise diagramming.
 
-## React Compiler
+## 🚀 Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. **Run Locally**:
+   ```bash
+   npm run dev
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3. **Build for Production**:
+   ```bash
+   npm run build
+   ```
+
+## 🛠️ Technology Stack
+
+- **Framework**: React 18
+- **Bundler**: Vite
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Interactions**: React Draggable
+- **Effects**: Canvas Confetti
+- **Styling**: Vanilla CSS (Custom Glassmorphism)
+
+## 📁 Project Structure
+
+```
+classboard/
+├── public/index.html
+├── src/
+│   ├── constants/ (Tools, Colors)
+│   ├── hooks/ (History, Display, Canvas)
+│   ├── components/ (Modular UI)
+│   ├── App.jsx + App.css
+│   └── index.js
+└── package.json
+```
+
+## 📄 License
+MIT

@@ -1,364 +1,213 @@
-import React, { useState, useRef, useEffect } from 'react';
-import './index.css';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Pencil, 
-  Square, 
-  Circle as CircleIcon, 
-  Minus, 
-  Eraser, 
-  Undo2, 
-  Redo2, 
-  Trash2, 
-  Download, 
-  Monitor,
-  X,
-  Type,
-  MousePointer2
-} from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import Navbar             from './components/Navbar/Navbar';
+import ToolPanel          from './components/ToolPanel/ToolPanel';
+import RightPanel         from './components/RightPanel/RightPanel';
+import CanvasBoard        from './components/CanvasBoard/CanvasBoard';
+import ScreenShareViewer  from './components/ScreenShareViewer/ScreenShareViewer';
+import StatusBar          from './components/StatusBar/StatusBar';
+import { useHistory }     from './hooks/useHistory';
+import { useScreenShare } from './hooks/useScreenShare';
+import { useCanvas }      from './hooks/useCanvas';
+import { DEFAULT_COLOR, DEFAULT_STROKE } from './constants/colors';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, STICKY_COLORS } from './constants/tools';
+import './App.css';
 
-function App() {
-  const [tool, setTool] = useState('pencil');
-  const [color, setColor] = useState('#000000');
-  const [lineWidth, setLineWidth] = useState(5);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
-  
-  const canvasRef = useRef(null);
-  const tempCanvasRef = useRef(null);
-  const contextRef = useRef(null);
-  const tempContextRef = useRef(null);
-  const videoRef = useRef(null);
+export default function App() {
+  /* ── Canvas refs ─────────────────────────────────────────────── */
+  const canvasRef      = useRef(null);
+  const overlayRef     = useRef(null);
+  const laserCanvasRef = useRef(null);
 
-  const [history, setHistory] = useState([]);
-  const [historyPointer, setHistoryPointer] = useState(-1);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  /* ── Tool state ──────────────────────────────────────────────── */
+  const [activeTool,  setActiveTool]  = useState('pen');
+  const [color,       setColor]       = useState(DEFAULT_COLOR);
+  const [strokeWidth, setStrokeWidth] = useState(DEFAULT_STROKE);
+  const [opacity,     setOpacity]     = useState(1);
+  const [filled,      setFilled]      = useState(false);
+  const [bgOption,    setBgOption]    = useState('white');
 
-  const colors = [
-    '#000000', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b',
-    '#a855f7', '#ec4899', '#06b6d4', '#8b5cf6', '#64748b'
-  ];
+  /* ── Zoom / Pan ──────────────────────────────────────────────── */
+  const [zoom,       setZoom]       = useState(1);
+  const [panOffset,  setPanOffset]  = useState({ x: 0, y: 0 });
 
-  // Initialize main canvas + hidden buffer canvas for shapes
+  /* ── Sticky notes ────────────────────────────────────────────── */
+  const [stickyNotes, setStickyNotes] = useState([]);
+
+  /* ── Room code ───────────────────────────────────────────────── */
+  const [roomCode] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
+
+  /* ── History ─────────────────────────────────────────────────── */
+  const { save, undo, redo, init, canUndo, canRedo } = useHistory(canvasRef);
+
+  /* ── Screen Share ────────────────────────────────────────────── */
+  const screenShare = useScreenShare(canvasRef);
+
+  /* ── Canvas drawing ──────────────────────────────────────────── */
+  const { onDown, onMove, onUp, commitText } = useCanvas({
+    canvasRef, overlayRef, laserCanvasRef,
+    activeTool, color, strokeWidth, opacity, filled,
+    onSave: save,
+  });
+
+  /* ── Init blank canvas ───────────────────────────────────────── */
   useEffect(() => {
-    const initCanvas = (canvas, contextStateRef) => {
-      canvas.width = window.innerWidth * 2;
-      canvas.height = window.innerHeight * 2;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      const context = canvas.getContext('2d');
-      context.scale(2, 2);
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      contextStateRef.current = context;
-      return context;
-    };
-
-    initCanvas(canvasRef.current, contextRef);
-    initCanvas(tempCanvasRef.current, tempContextRef);
-
-    // Initial base background
-    contextRef.current.fillStyle = 'white';
-    contextRef.current.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    
-    saveToHistory();
-
-    const handleResize = () => {
-      // Re-init with history preservation logic... (simplified here for v2)
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    init();
   }, []);
 
-  const saveToHistory = () => {
-    const canvas = canvasRef.current;
-    const newState = canvas.toDataURL();
-    const newHistory = history.slice(0, historyPointer + 1);
-    newHistory.push(newState);
-    if (newHistory.length > 50) newHistory.shift();
-    setHistory(newHistory);
-    setHistoryPointer(newHistory.length - 1);
-  };
-
-  const undo = () => {
-    if (historyPointer > 0) {
-      const prevPointer = historyPointer - 1;
-      restoreState(history[prevPointer]);
-      setHistoryPointer(prevPointer);
-    }
-  };
-
-  const redo = () => {
-    if (historyPointer < history.length - 1) {
-      const nextPointer = historyPointer + 1;
-      restoreState(history[nextPointer]);
-      setHistoryPointer(nextPointer);
-    }
-  };
-
-  const restoreState = (dataUrl) => {
-    const img = new Image();
-    img.src = dataUrl;
-    img.onload = () => {
-      contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      contextRef.current.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
+  /* ── Keyboard shortcuts ──────────────────────────────────────── */
+  useEffect(() => {
+    const keyMap = {
+      's': 'select', 'p': 'pen', 'h': 'marker', 'e': 'eraser',
+      'q': 'laser',  'l': 'line', 'a': 'arrow',  'r': 'rect',
+      'c': 'circle', 'd': 'diamond', 't': 'text', 'n': 'sticky', 'm': 'pan',
     };
-  };
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); return; }
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(z => Math.min(z + 0.1, 3)); }
+      if (e.key === '-') { e.preventDefault(); setZoom(z => Math.max(z - 0.1, 0.25)); }
+      if (e.key === '0') { e.preventDefault(); setZoom(1); setPanOffset({ x: 0, y: 0 }); }
+      if (keyMap[e.key]) setActiveTool(keyMap[e.key]);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo, init, save]);
 
-  const startDrawing = ({ nativeEvent }) => {
-    const { offsetX, offsetY } = nativeEvent;
-    setIsDrawing(true);
-    setStartPos({ x: offsetX, y: offsetY });
-    
-    if (tool === 'pencil' || tool === 'eraser') {
-      contextRef.current.beginPath();
-      contextRef.current.moveTo(offsetX, offsetY);
-      contextRef.current.strokeStyle = tool === 'eraser' ? 'white' : color;
-      contextRef.current.lineWidth = lineWidth;
-    }
-  };
+  /* ── Mouse-wheel zoom ────────────────────────────────────────── */
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.08 : 0.08;
+      setZoom(z => Math.min(Math.max(z + delta, 0.25), 3));
+    };
+    window.addEventListener('wheel', handler, { passive: false });
+    return () => window.removeEventListener('wheel', handler);
+  }, []);
 
-  const draw = ({ nativeEvent }) => {
-    if (!isDrawing) return;
-    const { offsetX, offsetY } = nativeEvent;
-    
-    if (tool === 'pencil' || tool === 'eraser') {
-      contextRef.current.lineTo(offsetX, offsetY);
-      contextRef.current.stroke();
-    } else {
-      // For shapes, we draw on the temp canvas and clear previous frame
-      tempContextRef.current.clearRect(0, 0, tempCanvasRef.current.width, tempCanvasRef.current.height);
-      tempContextRef.current.strokeStyle = color;
-      tempContextRef.current.lineWidth = lineWidth;
-      tempContextRef.current.beginPath();
-      
-      if (tool === 'rect') {
-        const width = offsetX - startPos.x;
-        const height = offsetY - startPos.y;
-        tempContextRef.current.rect(startPos.x, startPos.y, width, height);
-      } else if (tool === 'circle') {
-        const radius = Math.sqrt(Math.pow(offsetX - startPos.x, 2) + Math.pow(offsetY - startPos.y, 2));
-        tempContextRef.current.arc(startPos.x, startPos.y, radius, 0, 2 * Math.PI);
-      } else if (tool === 'line') {
-        tempContextRef.current.moveTo(startPos.x, startPos.y);
-        tempContextRef.current.lineTo(offsetX, offsetY);
-      }
-      tempContextRef.current.stroke();
-    }
-  };
+  /* ── Actions ─────────────────────────────────────────────────── */
+  const clearCanvas = useCallback(() => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = bgOption === 'black' ? '#0d1117' : '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    save();
+  }, [bgOption, save]);
 
-  const finishDrawing = () => {
-    if (!isDrawing) return;
-    
-    if (tool !== 'pencil' && tool !== 'eraser') {
-      // Commit shape from temp canvas to main canvas
-      contextRef.current.drawImage(tempCanvasRef.current, 0, 0, window.innerWidth, window.innerHeight);
-      tempContextRef.current.clearRect(0, 0, tempCanvasRef.current.width, tempCanvasRef.current.height);
-    }
-    
-    setIsDrawing(false);
-    saveToHistory();
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    const context = contextRef.current;
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    saveToHistory();
-  };
-
-  const downloadImage = () => {
-    const canvas = canvasRef.current;
+  const downloadPNG = useCallback(() => {
     const link = document.createElement('a');
-    link.download = `whiteboard-${Date.now()}.png`;
-    link.href = canvas.toDataURL();
+    link.download = `classboard-${Date.now()}.png`;
+    link.href = canvasRef.current?.toDataURL('image/png') ?? '';
     link.click();
-  };
+  }, []);
 
-  const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      const tracks = videoRef.current.srcObject?.getTracks();
-      tracks?.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-      setIsScreenSharing(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        videoRef.current.srcObject = stream;
-        setIsScreenSharing(true);
-        stream.getVideoTracks()[0].onended = () => setIsScreenSharing(false);
-      } catch (err) {
-        console.error("Screen Share Failed:", err);
-      }
-    }
-  };
+  /* ── Sticky note management ──────────────────────────────────── */
+  const addSticky = useCallback((screenX, screenY) => {
+    const color = STICKY_COLORS[Math.floor(Math.random() * STICKY_COLORS.length)];
+    setStickyNotes(prev => [...prev, {
+      id: Date.now(), x: screenX - 80, y: screenY,
+      text: '', color,
+      rotation: (Math.random() - 0.5) * 4,
+    }]);
+  }, []);
 
+  const handleCanvasDown = useCallback((e, onTextReq) => {
+    onDown(e, (sx, sy, cx, cy, isSticky) => {
+      if (isSticky) addSticky(sx, sy);
+      else onTextReq(sx, sy, cx, cy);
+    });
+  }, [onDown, addSticky]);
+
+  const moveStickyNote = (id, x, y) =>
+    setStickyNotes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n));
+
+  const editStickyNote = (id, text) =>
+    setStickyNotes(prev => prev.map(n => n.id === id ? { ...n, text } : n));
+
+  const deleteStickyNote = (id) =>
+    setStickyNotes(prev => prev.filter(n => n.id !== id));
+
+  /* ─────────────────────────────────────────────────────────────── */
   return (
-    <div className="app-container">
-      {/* Premium Animated Toolbar */}
-      <motion.div 
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 100, delay: 0.1 }}
-        className="toolbar glass"
-      >
-        <div className="tool-group" style={{ paddingRight: '12px' }}>
-          <motion.h1 
-            whileHover={{ scale: 1.05 }}
-            className="brand" 
-            style={{ fontSize: '18px', fontWeight: '800', background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-          >
-            EduBoard <span style={{ color: 'var(--text-secondary)', fontSize: '10px', verticalAlign: 'middle', WebkitTextFillColor: '#94a3b8' }}>PRO</span>
-          </motion.h1>
-        </div>
-        
-        <div className="tool-group">
-          <ToolButton active={tool === 'pencil'} onClick={() => setTool('pencil')} icon={<Pencil size={20} />} label="Pencil" />
-          <ToolButton active={tool === 'eraser'} onClick={() => setTool('eraser')} icon={<Eraser size={20} />} label="Eraser" />
-          <ToolButton active={tool === 'rect'} onClick={() => setTool('rect')} icon={<Square size={20} />} label="Rectangle" />
-          <ToolButton active={tool === 'circle'} onClick={() => setTool('circle')} icon={<CircleIcon size={20} />} label="Circle" />
-          <ToolButton active={tool === 'line'} onClick={() => setTool('line')} icon={<Minus size={20} />} label="Line" />
-        </div>
+    <div className="app-root">
+      <Navbar
+        roomCode={roomCode}
+        isSharing={screenShare.isSharing}
+        isRecording={screenShare.isRecording}
+        recordedURL={screenShare.recordedURL}
+        onStartShare={screenShare.startShare}
+        onStopShare={screenShare.stopShare}
+        onStartRecording={screenShare.startRecording}
+        onStopRecording={screenShare.stopRecording}
+        onDownloadRecording={screenShare.downloadRecording}
+        onProjectToCanvas={screenShare.projectToCanvas}
+        bgOption={bgOption}
+        onBgChange={setBgOption}
+        zoom={zoom}
+        onZoomIn={() => setZoom(z => Math.min(z + 0.15, 3))}
+        onZoomOut={() => setZoom(z => Math.max(z - 0.15, 0.25))}
+        onZoomReset={setZoom}
+      />
 
-        <div className="tool-group">
-          <ToolButton onClick={undo} disabled={historyPointer <= 0} icon={<Undo2 size={20} />} label="Undo" />
-          <ToolButton onClick={redo} disabled={historyPointer >= history.length - 1} icon={<Redo2 size={20} />} label="Redo" />
-          <ToolButton onClick={clearCanvas} icon={<Trash2 size={20} />} label="Clear All" variant="danger" />
-        </div>
-
-        <div className="tool-group" style={{ borderRight: 'none' }}>
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn-primary" 
-            onClick={downloadImage}
-          >
-            <Download size={18} />
-            <span>Export</span>
-          </motion.button>
-          
-          <ToolButton 
-            active={isScreenSharing} 
-            onClick={toggleScreenShare} 
-            icon={<Monitor size={20} />} 
-            label="Share Screen" 
-            className="screen-share-btn"
-          />
-        </div>
-      </motion.div>
-
-      {/* Main Drawing Layer */}
-      <div className="canvas-container">
-        <canvas
-          id="whiteboard"
-          ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseUp={finishDrawing}
-          onMouseMove={draw}
+      <div className="app-body">
+        <ToolPanel
+          activeTool={activeTool} setActiveTool={setActiveTool}
+          filled={filled} setFilled={setFilled}
         />
-        {/* Transparent shape preview layer */}
-        <canvas
-          id="temp-canvas"
-          ref={tempCanvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, pointerEvents: isDrawing ? 'none' : 'auto' }}
-          onMouseDown={startDrawing}
-          onMouseUp={finishDrawing}
-          onMouseMove={draw}
+
+        <CanvasBoard
+          canvasRef={canvasRef} overlayRef={overlayRef} laserCanvasRef={laserCanvasRef}
+          onDown={handleCanvasDown} onMove={onMove} onUp={onUp}
+          onCommitText={commitText}
+          activeTool={activeTool} color={color} strokeWidth={strokeWidth}
+          bgOption={bgOption}
+          zoom={zoom} panOffset={panOffset}
+          stickyNotes={stickyNotes}
+          onStickyMove={moveStickyNote}
+          onStickyEdit={editStickyNote}
+          onStickyDelete={deleteStickyNote}
+        />
+
+        <RightPanel
+          color={color}       setColor={setColor}
+          strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+          opacity={opacity}   setOpacity={setOpacity}
+          canUndo={canUndo}   canRedo={canRedo}
+          onUndo={undo}       onRedo={redo}
+          onClear={clearCanvas}
+          onDownload={downloadPNG}
         />
       </div>
 
-      {/* Sidebar Controls with Menu Animation */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ x: 200, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 200, opacity: 0 }}
-            className="controls-overlay"
-          >
-            <div className="control-card glass">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600' }}>Properties</h3>
-              </div>
-              
-              <div className="color-grid">
-                {colors.map(c => (
-                  <motion.div 
-                    key={c}
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
-                    className={`color-swatch ${color === c ? 'active' : ''}`}
-                    style={{ backgroundColor: c }}
-                    onClick={() => setColor(c)}
-                  />
-                ))}
-              </div>
+      <StatusBar
+        activeTool={activeTool} color={color}
+        strokeWidth={strokeWidth} opacity={opacity} zoom={zoom}
+        isSharing={screenShare.isSharing}
+        isRecording={screenShare.isRecording}
+      />
 
-              <div className="slider-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <label>Brush Size</label>
-                  <span style={{ fontSize: '12px', color: 'var(--accent-color)' }}>{lineWidth}px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="2" 
-                  max="40" 
-                  value={lineWidth} 
-                  onChange={(e) => setLineWidth(parseInt(e.target.value))} 
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Floating PiP Screen Share Window */}
+      <ScreenShareViewer
+        videoRef={screenShare.videoRef}
+        isSharing={screenShare.isSharing}
+        isRecording={screenShare.isRecording}
+        onStartRecording={screenShare.startRecording}
+        onStopRecording={screenShare.stopRecording}
+        onProjectToCanvas={screenShare.projectToCanvas}
+        onStopShare={screenShare.stopShare}
+        recordedURL={screenShare.recordedURL}
+        onDownloadRecording={screenShare.downloadRecording}
+      />
 
-      {/* Screen Share Overlay */}
-      <AnimatePresence>
-        {isScreenSharing && (
-          <motion.div 
-            drag
-            dragConstraints={{ left: 0, right: window.innerWidth - 320, top: 0, bottom: window.innerHeight - 180 }}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }}
-            className="screen-share-overlay glass"
-            style={{ cursor: 'move' }}
-          >
-            <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
-              <button 
-                className="tool-btn active" 
-                style={{ padding: '6px' }}
-                onClick={toggleScreenShare}
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <video ref={videoRef} autoPlay playsInline muted />
-            <div style={{ position: 'absolute', bottom: '8px', left: '8px', pointerEvents: 'none', fontSize: '10px', opacity: 0.6 }}>
-              Drag to move preview
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Error toast */}
+      {screenShare.shareError && (
+        <div className="error-toast">{screenShare.shareError}</div>
+      )}
     </div>
   );
 }
-
-// Sub-component for Tool Buttons to handle animations
-const ToolButton = ({ active, icon, onClick, label, disabled, variant, className }) => (
-  <motion.button 
-    title={label}
-    disabled={disabled}
-    whileHover={{ y: -2, scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    className={`tool-btn ${active ? 'active' : ''} ${variant === 'danger' ? 'hover-danger' : ''} ${className || ''}`}
-    onClick={onClick}
-    style={{ opacity: disabled ? 0.3 : 1 }}
-  >
-    {icon}
-  </motion.button>
-);
-
-export default App;

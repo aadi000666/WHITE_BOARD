@@ -1,33 +1,27 @@
 {
-  "name": "white-borad",
-  "homepage": "https://aadi000666.github.io/WhiteBoard03",
+  "name": "WHITE_BOARD",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "homepage": "https://aadi000666.github.io/WHITE_BOARD/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.7.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "canvas-confetti": "^1.9.2",
+    "framer-motion": "^11.0.8",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-draggable": "^4.4.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
+    "@vitejs/plugin-react": "^4.2.1",
     "gh-pages": "^6.3.0",
-    "globals": "^17.4.0",
-    "vite": "^8.0.1"
+    "vite": "^5.1.4"
   }
 }
