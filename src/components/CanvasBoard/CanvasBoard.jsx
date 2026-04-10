@@ -1,3 +1,4 @@
+import { useRef, useState, useCallback } from 'react';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../../constants/tools';
 
 export default function CanvasBoard({
