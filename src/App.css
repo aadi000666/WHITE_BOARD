@@ -579,3 +579,76 @@ body {
 
 .pip-ctrl-btn.record.active { background: #ef4444; }
 .pip-icon-btn { background: transparent; color: white; border: none; font-size: 1rem; cursor: pointer; padding: 4px; }
+
+/* ── Dropdowns ─────────────────────────────────────────────── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: white;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  min-width: 140px;
+  z-index: 2000;
+  animation: slideUp 0.2s ease-out;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover { background: #f1f5f9; }
+.dropdown-item.active { background: #e0e7ff; color: var(--primary); }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Tool Hints ─────────────────────────────────────────────── */
+.tool-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 1rem;
+  opacity: 0.6;
+}
+
+.tool-hint span { font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 2px 0;
+}
+
+.hint-row kbd {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.hint-row span { text-transform: none; font-size: 0.75rem; color: var(--text-main); }
