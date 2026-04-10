@@ -14,8 +14,9 @@ export default function Navbar({
   const [showZoomMenu, setShowZoomMenu] = useState(false);
 
   const copyRoom = () => {
+    const shareUrl = window.location.origin + window.location.pathname;
     navigator.clipboard.writeText(
-      `Join my ClassBoard session! Room Code: ${roomCode}\nhttps://classboard.app/join/${roomCode}`
+      `Join my WHITE_BOARD session! Room Code: ${roomCode}\nLink: ${shareUrl}`
     ).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -25,10 +26,10 @@ export default function Navbar({
     <nav className="navbar">
       {/* Brand */}
       <div className="nav-brand">
-        <div className="nav-logo">📋</div>
+        <div className="nav-logo">🎨</div>
         <div className="nav-title-wrap">
-          <span className="nav-title">ClassBoard</span>
-          <span className="nav-sub">Virtual Whiteboard</span>
+          <span className="nav-title">WHITE_BOARD AI</span>
+          <span className="nav-sub">Premium Collaborative Workspace</span>
         </div>
       </div>
 
