@@ -13,12 +13,12 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, STICKY_COLORS } from './constants/tools';
 import './App.css';
 
 export default function App() {
-  /* ── Canvas refs ─────────────────────────────────────────────── */
+  /* ── Canvas refs  */
   const canvasRef      = useRef(null);
   const overlayRef     = useRef(null);
   const laserCanvasRef = useRef(null);
 
-  /* ── Tool state ──────────────────────────────────────────────── */
+  /* ── Tool state  */
   const [activeTool,  setActiveTool]  = useState('pen');
   const [color,       setColor]       = useState(DEFAULT_COLOR);
   const [strokeWidth, setStrokeWidth] = useState(DEFAULT_STROKE);
@@ -26,30 +26,30 @@ export default function App() {
   const [filled,      setFilled]      = useState(false);
   const [bgOption,    setBgOption]    = useState('white');
 
-  /* ── Zoom / Pan ──────────────────────────────────────────────── */
+  /* ── Zoom / Pan  */
   const [zoom,       setZoom]       = useState(1);
   const [panOffset,  setPanOffset]  = useState({ x: 0, y: 0 });
 
-  /* ── Sticky notes ────────────────────────────────────────────── */
+  /* ── Sticky notes  */
   const [stickyNotes, setStickyNotes] = useState([]);
 
-  /* ── Room code ───────────────────────────────────────────────── */
+  /* ── Room code  */
   const [roomCode] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
 
-  /* ── History ─────────────────────────────────────────────────── */
+  /* ── History  */
   const { save, undo, redo, init, canUndo, canRedo } = useHistory(canvasRef);
 
-  /* ── Screen Share ────────────────────────────────────────────── */
+  /* ── Screen Share  */
   const screenShare = useScreenShare(canvasRef);
 
-  /* ── Canvas drawing ──────────────────────────────────────────── */
+  /* ── Canvas drawing  */
   const { onDown, onMove, onUp, commitText } = useCanvas({
     canvasRef, overlayRef, laserCanvasRef,
     activeTool, color, strokeWidth, opacity, filled,
     onSave: save,
   });
 
-  /* ── Init blank canvas ───────────────────────────────────────── */
+  /* ── Init blank canvas  */
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
@@ -58,7 +58,7 @@ export default function App() {
     init();
   }, []);
 
-  /* ── Keyboard shortcuts ──────────────────────────────────────── */
+  /* ── Keyboard shortcuts ─ */
   useEffect(() => {
     const keyMap = {
       's': 'select', 'p': 'pen', 'h': 'marker', 'e': 'eraser',
@@ -78,7 +78,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo, init, save]);
 
-  /* ── Mouse-wheel zoom ────────────────────────────────────────── */
+  /* ── Mouse-wheel zoom  */
   useEffect(() => {
     const handler = (e) => {
       if (!e.ctrlKey && !e.metaKey) return;
@@ -90,7 +90,7 @@ export default function App() {
     return () => window.removeEventListener('wheel', handler);
   }, []);
 
-  /* ── Actions ─────────────────────────────────────────────────── */
+  /* ── Actions  */
   const clearCanvas = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
@@ -106,7 +106,7 @@ export default function App() {
     link.click();
   }, []);
 
-  /* ── Sticky note management ──────────────────────────────────── */
+  /* ── Sticky note management  */
   const addSticky = useCallback((screenX, screenY) => {
     const color = STICKY_COLORS[Math.floor(Math.random() * STICKY_COLORS.length)];
     setStickyNotes(prev => [...prev, {
