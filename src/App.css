@@ -43,7 +43,7 @@ body {
   flex-direction: column;
 }
 
-/* ── Navbar ────────────────────────────────────────────────── */
+/* ── Navbar  */
 .navbar {
   height: 64px;
   background: var(--glass-bg);
@@ -190,7 +190,7 @@ body {
   background: var(--primary-dark);
 }
 
-/* ── App Body ─────────────────────────────────────────────── */
+/* ── App Body  */
 .app-body {
   flex: 1;
   position: relative;
@@ -198,7 +198,7 @@ body {
   overflow: hidden;
 }
 
-/* ── Tool Panel ───────────────────────────────────────────── */
+/* ── Tool Panel  */
 .tool-panel {
   position: absolute;
   left: 1rem;
@@ -274,7 +274,7 @@ body {
   margin: 0.25rem 0;
 }
 
-/* ── Canvas Board ─────────────────────────────────────────── */
+/* ── Canvas Board  */
 .canvas-area {
   flex: 1;
   position: relative;
@@ -373,7 +373,7 @@ body {
   pointer-events: none;
 }
 
-/* ── Sticky Note ──────────────────────────────────────────── */
+/* ── Sticky Note  */
 .sticky {
   position: absolute;
   width: 180px;
@@ -420,7 +420,7 @@ body {
   outline: none;
 }
 
-/* ── Right Panel ───────────────────────────────────────────── */
+/* ── Right Panel  */
 .right-panel {
   position: absolute;
   right: 1rem;
@@ -498,7 +498,7 @@ body {
 .action-btn.danger { color: var(--accent); }
 .action-btn.success { color: #10b981; }
 
-/* ── Status Bar ────────────────────────────────────────────── */
+/* ── Status Bar  */
 .status-bar {
   height: 36px;
   background: #1e293b;
@@ -539,7 +539,7 @@ body {
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* ── PIP Screen Share ────────────────────────────────────────── */
+/* ── PIP Screen Share  */
 .pip-window {
   position: absolute;
   background: #000;
